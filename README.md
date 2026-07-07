@@ -12,6 +12,7 @@
 | **교육과정 지식그래프** | `templates/curriculum-kb/` | 2022 개정 교육과정 성취기준을 "개념 원자"로 분해 — 선수학습 결손 추적용 |
 | **연구용(논문) 하네스** | `templates/kg-research/` | 심사 방어 가능한 지식그래프 구축(불변 규칙·이중 코딩·품질 게이트) — 고급 |
 | **문서 추출 스킬** | `skills/extract-documents/` | **HWP·HWPX·PDF·XLSX·DOCX → 텍스트**. 한국 학교 문서 대응 |
+| **RAG 내보내기 스킬** | `skills/rag-export/` | 위키 → **AnythingLLM·Open WebUI·Khoj·LightRAG** 등 검증된 오픈소스 RAG 스택 연결 |
 | **학교앱 보안 팩** | `security/` | 학생 데이터 다루는 앱의 보안·개인정보 설계 방법론 + 감사 에이전트 |
 
 ## 준비물
@@ -69,6 +70,19 @@ python skills/extract-documents/scripts/extract.py 공문.hwp 계획서.hwpx 자
 ```
 HWPX/XLSX/DOCX는 설치 없이 동작, HWP는 `pip install olefile`, PDF는 `pip install pypdf`.
 암호 문서·배포용(DRM) HWP·스캔 PDF는 명확한 오류/경고로 안내합니다.
+
+## 다른 RAG 앱에 연결하기 (`/export-rag`)
+
+위키가 커지면 Claude Code 밖에서도 쓰고 싶어집니다. Claude Code에서 `/export-rag`를
+실행하면 `rag-export/` 폴더에 3가지 범용 포맷이 생깁니다:
+
+- `corpus.md` — **AnythingLLM**(데스크톱 앱, 제일 쉬움)·**Open WebUI**(교무실 공용 서버)·ChatGPT 프로젝트에 업로드
+- `corpus.jsonl` — LlamaIndex·LangChain·**LightRAG** 같은 파이프라인용 (메타데이터 동봉)
+- `graph.json` — 타입 엣지 그래프 (requires 결손 체인 등을 그래프 RAG에 주입)
+
+어떤 도구를 고를지 판단 가이드와 도구별 연결 절차는
+[`skills/rag-export/SKILL.md`](skills/rag-export/SKILL.md)에 있습니다.
+원칙: 외부 도구는 **읽기 전용**(쓰기는 Claude Code만), `10-sources/` 원문은 업로드 금지.
 
 ## 학교앱 보안 팩 (선택)
 

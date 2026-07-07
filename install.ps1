@@ -34,8 +34,10 @@ New-Item -ItemType Directory -Force $Target | Out-Null
 # 1) 위키 템플릿
 Copy-IfMissing (Join-Path $Root "templates\$Kind") $Target
 
-# 2) 문서 추출 스킬 (모든 종류 공통)
-Copy-IfMissing (Join-Path $Root "skills\extract-documents") (Join-Path $Target ".claude\skills\extract-documents")
+# 2) 공용 스킬 (문서 추출·RAG 내보내기 등 — skills/ 전체)
+Get-ChildItem -Directory (Join-Path $Root "skills") | ForEach-Object {
+    Copy-IfMissing $_.FullName (Join-Path $Target ".claude\skills\$($_.Name)")
+}
 
 # 3) (선택) 학교앱 보안 팩
 if ($WithSecurity) {
