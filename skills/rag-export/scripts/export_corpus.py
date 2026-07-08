@@ -118,14 +118,27 @@ def main(argv=None):
             f.write(n["text"])
 
     # 3) graph.json — 타입 엣지 그래프
+    # resolved: "node"(노드 참조) | "source"(10-sources 원천 참조 — 유효) | False(깨진 링크)
     ids = {n["id"] for n in nodes}
+    # 위키링크는 파일명(stem) 기준으로 해석된다(Obsidian 규칙) — id가 경로형(30-topics/X)이어도 매칭
+    stem_to_id = {Path(n["path"]).stem: n["id"] for n in nodes}
     title_to_id = {n["title"]: n["id"] for n in nodes}
+    source_stems = set()
+    src_dir = root / "10-sources"
+    if src_dir.is_dir():
+        source_stems = {f.stem for f in src_dir.rglob("*") if f.is_file()}
     edges = []
     for n in nodes:
         for e in n["edges"]:
-            dst = e["target"] if e["target"] in ids else title_to_id.get(e["target"], e["target"])
-            edges.append({"src": n["id"], "edge": e["type"], "dst": dst,
-                          "resolved": dst in ids})
+            t = e["target"]
+            dst = t if t in ids else stem_to_id.get(t) or title_to_id.get(t) or t
+            if dst in ids:
+                resolved = "node"
+            elif dst in source_stems:
+                resolved = "source"
+            else:
+                resolved = False
+            edges.append({"src": n["id"], "edge": e["type"], "dst": dst, "resolved": resolved})
     graph = {
         "nodes": [{k: n[k] for k in ("id", "type", "title", "summary", "tags", "status")} for n in nodes],
         "edges": edges,
@@ -133,10 +146,11 @@ def main(argv=None):
     (out / "graph.json").write_text(json.dumps(graph, ensure_ascii=False, indent=1), encoding="utf-8")
 
     unresolved = sum(1 for e in edges if not e["resolved"])
-    print(f"OK  노드 {len(nodes)}개, 엣지 {len(edges)}개(미해결 {unresolved}) → {out}")
+    src_refs = sum(1 for e in edges if e["resolved"] == "source")
+    print(f"OK  노드 {len(nodes)}개, 엣지 {len(edges)}개(원천 참조 {src_refs}, 깨진 링크 {unresolved}) → {out}")
     print(f"    corpus.jsonl / corpus.md / graph.json")
     if unresolved:
-        print(f"    참고: 미해결 엣지 {unresolved}개는 링크 대상 노드가 없는 것 — /lint 로 점검 가능")
+        print(f"    참고: 깨진 링크 {unresolved}개는 대상 노드/원천이 없는 것 — /lint 로 점검 가능")
     return 0
 
 
