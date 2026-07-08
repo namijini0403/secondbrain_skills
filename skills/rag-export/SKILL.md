@@ -16,7 +16,8 @@ description: Use when connecting the wiki to an external RAG or AI tool — when
 ## 내보내기
 
 ```bash
-python scripts/export_corpus.py <위키루트>     # → <위키루트>/rag-export/ 생성
+python scripts/export_corpus.py <위키루트>                  # → <위키루트>/rag-export/ 생성
+python scripts/export_corpus.py <위키루트> --split-by type   # + corpus-<타입>.md 분리본
 ```
 
 | 출력 | 포맷 | 먹는 도구 |
@@ -68,6 +69,27 @@ python scripts/export_corpus.py <위키루트>     # → <위키루트>/rag-expo
 ### ChatGPT (코드 없이)
 Projects(또는 Custom GPT)에 `corpus.md` 업로드 + 각 템플릿의 `AGENTS.md` 내용을
 instruction으로 붙여넣기(읽기 전용·인용 필수·없으면 "없음" 규약).
+
+## 검색 품질 튜닝 (현업 RAG 엔지니어 조언에서 채택)
+
+- **원문은 반드시 md로**: PDF를 그대로 벡터화하면 성능이 급락한다 — 이 저장소의
+  `extract-documents`로 md 변환 후 인덱싱 (이게 전처리의 절반).
+- **title/body 구조가 검색력**: 임베딩 모델 다수가 제목/본문 구조 문서로 학습돼 있다.
+  corpus.md가 노드마다 `## 제목 + 요약 + 본문` 헤더를 유지하는 이유 — 병합본을 직접
+  만들 때도 제목 없는 연속 텍스트로 뭉개지 말 것.
+- **질문형 쿼리**: 소형 임베딩 모델은 "A 관련 문서"보다 **"A와 관련된 문서는?"** 같은
+  질문형 입력에서 랭킹이 눈에 띄게 좋아진다. 시스템 프롬프트에 "검색 쿼리는 질문형으로
+  변환"을 넣어라.
+- **문서 경계·필터링이 정확도의 핵심**: 목적이 다른 노드를 같은 벡터 공간에서 섞어
+  검색하지 마라(소형 모델 눈엔 비슷비슷해 보인다). `--split-by type`으로 분리해
+  AnythingLLM 워크스페이스/Open WebUI 컬렉션을 **용도별로 나누고**, jsonl 파이프라인이면
+  `type`/`tags`/`gradeBand` 메타데이터 필터를 걸어라.
+- **한 노드 = 한 청크**: 이 위키의 노드는 이미 "한 아이디어" 크기라 별도 청킹이 필요
+  없다(작은 문서는 청킹 없이 더 잘 동작). 통짜 문서를 넣을 땐 청크·오버랩·sparse/dense
+  가중 조합을 골든셋으로 실험해서 정하는 것 — 기본값 신봉 금지.
+- **한국어 임베딩 모델**: BGE-M3(로컬 대표)·OpenAI text-embedding-3-large가 무난하고,
+  성능을 더 뽑아야 하면 Upstage 임베딩이 한국어 코사인 검색에서 유리하다는 현업 평.
+  상위권끼리는 차이가 작으니 모델 교체보다 **전처리·필터링 개선이 먼저**다.
 
 ## 판단 가이드
 

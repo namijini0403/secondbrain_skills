@@ -12,7 +12,8 @@
 | **교육과정 지식그래프** | `templates/curriculum-kb/` | 2022 개정 교육과정 성취기준을 "개념 원자"로 분해 — 선수학습 결손 추적용 |
 | **연구용(논문) 하네스** | `templates/kg-research/` | 심사 방어 가능한 지식그래프 구축(불변 규칙·이중 코딩·품질 게이트) — 고급 |
 | **문서 추출 스킬** | `skills/extract-documents/` | **HWP·HWPX·PDF·XLSX·DOCX → 텍스트**. 한국 학교 문서 대응 |
-| **RAG 내보내기 스킬** | `skills/rag-export/` | 위키 → **AnythingLLM·Open WebUI·Khoj·LightRAG** 등 검증된 오픈소스 RAG 스택 연결 |
+| **RAG 내보내기 스킬** | `skills/rag-export/` | 위키 → **AnythingLLM·Open WebUI·Khoj·LightRAG** 등 검증된 오픈소스 RAG 스택 연결 + 검색 품질 튜닝 가이드 |
+| **유튜브 수집 스킬** | `skills/ingest-youtube/` | 강의·연수 영상 → **타임스탬프 딥링크 전사본** (yt-dlp 자막, API 키 불필요, Whisper 폴백) |
 | **학교앱 보안 팩** | `security/` | 학생 데이터 다루는 앱의 보안·개인정보 설계 방법론 + 감사 에이전트 |
 
 ## 준비물
@@ -70,6 +71,12 @@ python skills/extract-documents/scripts/extract.py 공문.hwp 계획서.hwpx 자
 ```
 HWPX/XLSX/DOCX는 설치 없이 동작, HWP는 `pip install olefile`, PDF는 `pip install pypdf`.
 암호 문서·배포용(DRM) HWP·스캔 PDF는 명확한 오류/경고로 안내합니다.
+
+유튜브 강의·연수 영상도 소스가 됩니다 (`pip install yt-dlp`):
+```bash
+python skills/ingest-youtube/scripts/ingest_youtube.py "https://youtu.be/영상ID"
+# → 타임스탬프 딥링크([3:49](...?t=229)) 달린 전사본 md 생성 — API 키 불필요
+```
 
 ## 다른 RAG 앱에 연결하기 (`/export-rag`)
 

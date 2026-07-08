@@ -87,6 +87,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="위키 → RAG 코퍼스(jsonl/md/graph) 내보내기")
     ap.add_argument("root", nargs="?", default=".", help="위키 루트 (기본: 현재 폴더)")
     ap.add_argument("-o", "--output", default=None, help="출력 폴더 (기본: <루트>/rag-export)")
+    ap.add_argument("--split-by", choices=["type", "status"], default=None,
+                    help="corpus-<값>.md로 분리 내보내기 — 목적이 다른 노드를 같은 벡터 공간에 섞지 않기 위함")
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -107,15 +109,30 @@ def main(argv=None):
         for n in nodes:
             f.write(json.dumps(n, ensure_ascii=False) + "\n")
 
-    # 2) corpus.md — 업로드형 도구용 병합본 (노드 경계를 헤더로 보존)
-    with (out / "corpus.md").open("w", encoding="utf-8") as f:
-        f.write("# 위키 코퍼스 (자동 생성 — 원본: 20-nodes/, 30-topics/)\n")
+    # 2) corpus.md — 업로드형 도구용 병합본.
+    #    임베딩 모델 다수가 title/body 구조로 학습돼 있어 노드 경계를 "## 제목 + 요약 + 본문"
+    #    헤더 구조로 보존한다(제목 없는 연속 텍스트보다 검색 성능이 좋다).
+    def write_corpus_md(path: Path, subset, label: str):
+        with path.open("w", encoding="utf-8") as f:
+            f.write(f"# 위키 코퍼스{label} (자동 생성 — 원본: 20-nodes/, 30-topics/)\n")
+            for n in subset:
+                f.write(f"\n\n---\n\n## {n['title']}  \n")
+                f.write(f"(type: {n['type'] or '?'} · id: {n['id']} · status: {n['status'] or '?'})  \n")
+                if n["summary"]:
+                    f.write(f"**요약**: {n['summary']}\n\n")
+                f.write(n["text"])
+
+    write_corpus_md(out / "corpus.md", nodes, "")
+    split_files = []
+    if args.split_by:
+        groups = {}
         for n in nodes:
-            f.write(f"\n\n---\n\n## {n['title']}  \n")
-            f.write(f"(type: {n['type'] or '?'} · id: {n['id']} · status: {n['status'] or '?'})  \n")
-            if n["summary"]:
-                f.write(f"**요약**: {n['summary']}\n\n")
-            f.write(n["text"])
+            groups.setdefault(n.get(args.split_by) or "unknown", []).append(n)
+        for val, subset in sorted(groups.items()):
+            safe = re.sub(r"[^0-9A-Za-z가-힣_-]", "_", val)
+            p = out / f"corpus-{safe}.md"
+            write_corpus_md(p, subset, f" — {args.split_by}={val}")
+            split_files.append(f"{p.name}({len(subset)})")
 
     # 3) graph.json — 타입 엣지 그래프
     # resolved: "node"(노드 참조) | "source"(10-sources 원천 참조 — 유효) | False(깨진 링크)
@@ -149,6 +166,8 @@ def main(argv=None):
     src_refs = sum(1 for e in edges if e["resolved"] == "source")
     print(f"OK  노드 {len(nodes)}개, 엣지 {len(edges)}개(원천 참조 {src_refs}, 깨진 링크 {unresolved}) → {out}")
     print(f"    corpus.jsonl / corpus.md / graph.json")
+    if split_files:
+        print(f"    분리: {', '.join(split_files)}")
     if unresolved:
         print(f"    참고: 깨진 링크 {unresolved}개는 대상 노드/원천이 없는 것 — /lint 로 점검 가능")
     return 0
