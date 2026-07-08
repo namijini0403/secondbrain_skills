@@ -1,0 +1,12 @@
+# RAG 내보내기 생성물(/export-rag) — 재생성 가능 (루트 앵커: 스킬 폴더는 추적)
+/rag-export/
+
+# Obsidian 개인 작업 상태
+.obsidian/workspace*
+.obsidian/cache
+.trash/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
